@@ -1,0 +1,240 @@
+<html>
+<body>
+<canvas id='Lab4' height='1000' width='1000'>
+<script>
+	var canvas = document.getElementById('Lab4');
+	var ctx = canvas.getContext('2d');
+	var x, y, x1, y1;
+	
+	function blockMenu() {	
+    		document.getElementById("Lab4").innerHTML = "123";
+	}
+	document.oncontextmenu = function()  { blockMenu(); return false; };
+	
+	function getnormal(vector) {
+		var result = new Array();
+		result[0] = vector[1];
+		result[1] = (-1)*vector[0];
+		return result;		
+	}
+	
+	function scalarproduct(vector1, vector2) {
+		var result = vector1[0]*vector2[0] + vector1[1]*vector2[1];
+		return result;
+	}
+	
+	function getintersection(vector1, vector2, normal) {
+		var t = (-1)*(scalarproduct(vector1, normal))/(scalarproduct(vector2, normal));
+		return t;
+	}
+	function compareNumeric(a, b) {
+  		if (a > b) return 1;
+  		if (a < b) return -1;
+	}
+	
+	function makevector(x1, y1, x2, y2) {
+		var result = new Array();
+		result[0] = x2 - x1;
+		result[1] = y2 - y1;
+		return result;
+	}
+	function intervalsintersection(interval1, interval2) {
+		var result = new Array();
+		if ((interval1[0] <= interval2[0]) && (interval1[1] >= interval2[1])) {
+			result[0] = interval2[0];
+			result[1] = interval2[1];
+		}
+		else if ((interval1[0] > interval2[0]) && (interval1[1] < interval2[1])) {
+			result[0] = interval1[0];
+			result[1] = interval1[1];
+		}
+		else if ((interval1[0] <= interval2[0]) && (interval1[0] <= interval2[1]) && (interval1[1] <= interval2[1]) && (interval1[1] >= interval2[0])) {
+			result[0] = interval2[0];
+			result[1] = interval1[1];
+		}
+		else if ((interval1[0] >= interval2[0]) && (interval1[0] <= interval2[1]) && (interval1[1] >= interval2[1]) && (interval1[1] >= interval2[0])) {
+			result[0] = interval1[0];
+			result[1] = interval2[1];
+		}
+		return result;
+	}
+	function getpointcode(x, y) {
+		var result = 0;
+		if (x < 100)
+			result ^= 1;
+		if (y < 100)
+			result ^= 8;
+		if (x > 600)
+			result ^= 4;
+		if (y > 300)
+			result ^= 2;
+		return result;
+	}
+	
+	function line(x0, y0, x1, y1) {
+		var deltax = Math.abs(x1 - x0);
+		var deltay = Math.abs(y1 - y0);
+		var error = 0;
+		if (deltay <= deltax) {
+			var deltaerr = deltay;
+			var y = y0;
+			if (x1 > x0) {
+				for (var x = x0; x <= x1; ++x) {
+					ctx.fillRect(x, y, 1, 1);
+					error += deltaerr;
+					if (2*error >= deltax) {
+						if (y1 < y0) {
+							y--;
+						} else {
+							y++;
+						}
+						error -= deltax;
+					}
+				}
+			} else {
+				for (var x = x0; x >= x1; --x) {
+					ctx.fillRect(x, y, 1, 1);
+					error += deltaerr;
+					if (2*error >= deltax) {
+						if (y1 < y0) {
+							y--;
+						} else {
+							y++;
+						}
+						error -= deltax;
+					}
+				}
+			}
+		} else {
+			var deltaerr = deltax;
+			var x = x0;
+			if (y1 > y0) {
+				for (var y = y0; y <= y1; ++y) {
+					ctx.fillRect(x, y, 1, 1);
+					error += deltaerr;
+					if (2*error >= deltay) {
+						if (x1 < x0) {
+							x--;
+						} else {
+							x++;
+						}
+						error -= deltay;
+					}
+				}
+			} else {
+				for (var y = y0; y >= y1; --y) {
+					ctx.fillRect(x, y, 1, 1);
+					error += deltaerr;
+					if (2*error >= deltay) {
+						if (x1 < x0) {
+							x--;
+						} else {
+							x++;
+						}
+						error -= deltay;
+					}
+				}
+			}
+		}
+	}
+	
+	function cut(rectleft, rectright, rectup, rectdown, x1, y1, x2, y2) {
+		while ((getpointcode(x1,y1) | getpointcode(x2,y2)) && (!(getpointcode(x1,y1) & getpointcode(x2,y2)))) {
+			if (getpointcode(x1,y1) == 0) {
+				x2 += x1;
+				x1 = x2 - x1;
+				x2 -= x1;
+				y2 += y1;
+				y1 = y2 - y1;
+				y2 -= y1;
+			}
+			if ((getpointcode(x1,y1) & 1) == 1) {
+				y1 += (y2 - y1)*(rectleft - x1)/(x2 - x1);
+				x1 = rectleft;
+			}
+			else if ((getpointcode(x1,y1) & 2) == 2) {
+				x1 += (x2 - x1)*(rectup - y1)/(y2 - y1);
+				y1 = rectup;
+			}
+			else if ((getpointcode(x1,y1) & 4) == 4) {
+				y1 += (y2 - y1)*(rectright - x1)/(x2 - x1);
+				x1 = rectright;
+			}
+			else if ((getpointcode(x1,y1) & 8) == 8) {
+				x1 += (x2 - x1)*(rectdown - y1)/(y2 - y1);
+				y1 = rectdown;
+			}
+		}
+		if ((getpointcode(x1,y1) & getpointcode(x2,y2)))
+			return true;
+		else if ((getpointcode(x1,y1) | getpointcode(x2,y2)))
+			return false;
+	}
+	var x1rect = 100, y1rect = 100;
+	var x2rect = 600, y2rect = 100;
+	var x3rect = 600, y3rect = 300;
+	var x4rect = 100, y4rect = 300;
+	var potentialin = new Array();
+	var potentialout = new Array();
+	var points = new Array();
+	line(x1rect, y1rect, x2rect, y2rect);
+	line(x2rect, y2rect, x3rect, y3rect);
+	line(x3rect, y3rect, x4rect, y4rect);
+	line(x1rect, y1rect, x4rect, y4rect);
+	
+	canvas.onmousedown = function(event) {
+		if (event.button == 0) {
+			x = event.offsetX;
+			y = event.offsetY;
+			points[points.length] = new Array(x, y);
+		}
+		else if (event.button == 2) {
+			var j;
+			x = event.offsetX;
+			y = event.offsetY;
+			points[points.length] = new Array(x, y);
+			for (var i = 0; i < points.length; ++i) {
+				j = i + 1;	
+				if (i == points.length - 1)
+					j = 0;
+				x = points[i][0];
+				y = points[i][1];
+				x1 = points[j][0];
+				y1 = points[j][1];
+				if (cut(x1rect, x2rect, y3rect, y1rect, x, y, x1, y1))
+					continue;
+				if (scalarproduct(makevector(x, y, x1, y1), getnormal(makevector(x4rect, y4rect, x1rect, y1rect))) < 0 )
+					potentialin[potentialin.length] = getintersection(makevector(100, 200, x, y), makevector(x, y, x1, y1), getnormal(makevector(x4rect, y4rect, x1rect, y1rect)));
+				else
+					potentialout[potentialout.length] = getintersection(makevector(100, 200, x, y), makevector(x, y, x1, y1), getnormal(makevector(x4rect, y4rect, x1rect, y1rect)));
+				if (scalarproduct(makevector(x, y, x1, y1), getnormal(makevector(x1rect, y1rect, x2rect, y2rect))) < 0 )
+					potentialin[potentialin.length] = getintersection(makevector(350, 100, x, y), makevector(x, y, x1, y1), getnormal(makevector(x1rect, y1rect, x2rect, y2rect)));
+				else
+					potentialout[potentialout.length] = getintersection(makevector(350, 100, x, y), makevector(x, y, x1, y1), getnormal(makevector(x1rect, y1rect, x2rect, y2rect)));
+				if (scalarproduct(makevector(x, y, x1, y1), getnormal(makevector(x2rect, y2rect, x3rect, y3rect))) < 0 )
+					potentialin[potentialin.length] = getintersection(makevector(600, 200, x, y), makevector(x, y, x1, y1), getnormal(makevector(x2rect, y2rect, x3rect, y3rect)));
+				else
+					potentialout[potentialout.length] = getintersection(makevector(600, 200, x, y), makevector(x, y, x1, y1), getnormal(makevector(x2rect, y2rect, x3rect, y3rect)));
+				if (scalarproduct(makevector(x, y, x1, y1), getnormal(makevector(x3rect, y3rect, x4rect, y4rect))) < 0 )
+					potentialin[potentialin.length] = getintersection(makevector(350, 300, x, y), makevector(x, y, x1, y1), getnormal(makevector(x3rect, y3rect, x4rect, y4rect)));
+				else
+					potentialout[potentialout.length] = getintersection(makevector(350, 300, x, y), makevector(x, y, x1, y1), getnormal(makevector(x3rect, y3rect, x4rect, y4rect)));
+		
+				potentialin.sort(compareNumeric);
+				potentialout.sort(compareNumeric);
+				var inmax = potentialin[potentialin.length - 1];
+				var outmin = potentialout[0];
+				var buf = new Array();
+				buf = intervalsintersection(new Array(inmax, outmin), new Array(0, 1));
+				if (buf.length > 0)
+					line(x + (x1 - x)*buf[0], y + (y1 - y)*buf[0], x + (x1 - x)*buf[1], y + (y1 - y)*buf[1]);
+				potentialin = [];
+				potentialout = [];
+			}
+			points = [];			
+		}
+	}
+</script>
+</canvas>
+</body>
+</html>
